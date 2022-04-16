@@ -1,3 +1,179 @@
 # Family exercise from Geek Trust
 
 Exercise related to Test Driven Design
+
+## Guidelines
+### CHILD ADDITION:
+1. Cannot have duplicate names -> CHILD_ADDITION_FAILED
+2. If tree is empty add -> CHILD_ADDITION_SUCCEEDED
+3. Cannot be added through father -> CHILD_ADDITION_FAILED
+4. Both father and mother need to exist -> PERSON_NOT_FOUND
+5. All cases successful -> CHILD_ADDITION_SUCCEEDED
+
+### SPOUSE ADDITION:
+1. Cannot have duplicate name -> SPOUSE_ADDITION_FAILED
+2. Cannot be added if tree is empty -> SPOUSE_ADDITION_FAILED
+3. Spouse needs to exist -> PERSON_NOT_FOUND
+4. Spouse gender needs to be opposite -> SPOUSE_ADDITION_FAILED
+5. Spouse cannot have an existing spouse -> SPOUSE_ADDITION_FAILED
+
+### GET_RELATIONSHIP NOTE:
+The names of people in the relationship need to be printed in order of their addition.
+1. Person should exist -> PERSON_NOT_FOUND
+2. Should return non-empty list -> NONE
+
+
+Gender 
+===============
+
+data_members:
+-------------
+* male = 'Male'
+* female = 'Female'
+
+
+Member -
+================
+
+data_members:
+--------------
+* id - Integer
+* name - String
+* gender - Enum Gender
+* mother - Member
+* father - Member
+* spouse - Member
+* children - List <Member>
+
+methods:
+-----------------
+* constructor - params: Integer id, String name, String gender
+* set_mother - params: <Member> mother
+* set_father - params: <Member> father
+* set_spouse - params: <Member> spouse
+* add_child - params: <Member> child
+
+* get_paternal_grandmother - params: None
+* get_maternal_grandmother - params: None
+* get_spouse_mother - params: None
+
+* get_paternal_aunt - params: None -> self.father.mother.children.filter(female)
+    - grandmother is None - []
+    - grandmother is valid, but only one child, your father - []
+    - grandmother is valid, multiple children, but no girls only boys - []
+    - grandmother is valid, multiple children, girls and boys - [girls]
+
+* get_paternal_uncle - params: None -> self.father.mother.children.filter(male)
+    - grandmother is None - []
+    - grandmother is valid, but only one child, your father - []
+    - grandmother is valid, multiple children, but all girls and our father - []
+    - grandmother is valid, multiple children, both boys and girls - [boys, father is not included]
+
+* get_maternal_aunt - params: None -> self.mother.mother.children.filter(female)
+* get_maternal_uncle - params: None -> self.mother.mother.children.filter(male)
+
+* get_brother_in_law - params: None -> self.spouse.mother.children.filter(male)
+    - spouse mother is None - []
+    - spouse mother is valid, but only one child, our spouse - []
+    - spouse mother is valid, multiple children, all girls and our spouse- []
+    - spouse mother is valid, multiple children, boys and girls - []
+
+* get_sister_in_law - params: None -> self.spouse.mother.children.filter(female)
+* get_son - params: None
+* get_daughter - params: None
+* get_siblings - params: None
+
+* get_relationship - params: String relationship_type
+
+
+FamilyTree - 
+===================
+
+data_members:
+-----------------
+* family_tree - Dictionary
+
+methods:
+-------------------
+* constructor - params: None
+* add_child - params: String name, String gender, String mother_name
+    - create member
+    - if family_tree is empty
+        - add member
+        - return CHILD_ADDITION_SUCCEEDED
+    - if family_tree is not empty
+        - if member already exists
+            - return CHILD_ADDITION_FAILED
+        - mother should be a valid entity
+        - if not mother:
+            - return PERSON_NOT_FOUND
+        - if mother.gender is not female:
+            - return CHILD_ADDITION_FAILED
+        - mother.spouse should be a valid entity
+        - if not mother.spouse:
+            - return CHILD_ADDITION_FAILED
+        - if both mother and father exist
+            - add_child for mother and father
+            - set_mother for member
+            - set_father for member
+            - create an entry for member
+            - return CHILD_ADDITION_SUCCEEDED
+
+* add_spouse - params: String name, String gender, String spouse_name
+    - create member
+    - if family_tree is empty
+        - return SPOUSE_ADDITION_FAILED
+    - if family_tree is not empty
+        - if member already exists
+            - return SPOUSE_ADDITION_FAILED
+        - spouse should be a valid entity
+        - if not spouse:
+            - return PERSON_NOT_FOUND
+        - if spouse.gender == member.gender:
+            - return SPOUSE_ADDITION_FAILED
+        - if spouse is already married:
+            - return SPOUSE_ADDITION_FAILED
+        - if all conditions match
+            - set_spouse for member
+            - set_spouse for spouse
+            - create an entry for spouse
+            - return SPOUSE_ADDITION_SUCCEDED
+
+* get_relationship - params: String name, String relationship_type
+    - if not member:
+        - return PERSON_NOT_FOUND
+    result = member.get_relationship()
+
+    - if not result:
+        - return NONE
+    - else:
+        - return ' '.join(sort_based_on_id(result))
+
+Geektrust
+==========
+data_member:
+------------
+family_tree: FamilyTree()
+
+methods:
+---------
+* construct_add_child_method_call - params: String name, String gender, String mother_name
+* construct_add_spouse_method_call - params: String name, String gender, String spouse_name
+* construct_get_relationship_method_call - params: String name, String relationship_type
+* translate - params: String filename
+    - read lines from filename
+    - return a list of commands in strings
+
+    CONVERT: 
+        - ADD_CHILD Mother Name Gender => 'self.family_tree.add_child("Name", "Gender", "Mother")'
+        - ADD_SPOUSE Spouse Name Gender => 'self.family_tree.add_spouse(name, gender, spouse)'
+        - GET_RELATIONSHIP Name Relationship => 'self.family_tree.get_relationship(name, relationship_type)'
+
+* execute - params: List commands
+    - eval each command and store the result
+    - return result
+* log - params: List result
+    - print the results in console
+* setup - params: None
+    - call translate with setup file
+    - execute the results
