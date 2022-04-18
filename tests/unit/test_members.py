@@ -1,10 +1,30 @@
 from unittest import TestCase
 from src.member import Member, Gender
+from unittest.mock import patch, Mock
 
+
+def create_fake_member(id=None, name=None, gender=None, mother=None, father=None, 
+                        spouse=None, children=None):
+    member = Mock()
+    member.id = id
+    member.name = name
+    member.gender = gender
+    member.mother = mother
+    member.father = father
+    member.spouse = spouse
+    member.children = children
+    return member
+
+
+def return_father():
+    return Member(3, "Dad", Gender.male)
+
+def return_mother():
+    return Member(2, "Mom", Gender.female)
 
 class TestMember(TestCase):
 
-    def setUp(self) -> None:
+    def setUp(self) -> None:  
         self.member = Member(1, "Pepe", "Male")
 
     def test_initialization(self):
@@ -116,3 +136,109 @@ class TestMember(TestCase):
 
         member.spouse.mother = mother_spouse
         self.assertEqual(member.get_spouse_mother(), mother_spouse)
+
+
+    @patch('src.member.Member.get_paternal_grandmother', side_effect=[
+            None,
+            create_fake_member(),
+            create_fake_member(children=[Member(3, "Dad", Gender.male)]),
+            create_fake_member(children=[
+                Member(3, "Dad", Gender.male),
+                Member(4, "Uncle1", Gender.male),
+                Member(5, "Uncle2", Gender.male)
+            ]),
+            create_fake_member(children=[
+                Member(10, "Dad", Gender.male),
+                Member(11, "Uncle1", Gender.male),
+                Member(12, "Uncle2", Gender.male),
+                Member(13, "Aunt", Gender.female)
+            ]),
+            create_fake_member(children=[
+                Member(10, "Dad", Gender.male),
+                Member(11, "Uncle1", Gender.male),
+                Member(12, "Uncle2", Gender.male),
+                Member(13, "Aunt1", Gender.female),
+                Member(14, "Aunt2", Gender.female),
+
+            ])
+    ])
+    def test_get_paternal_aunt(self, mock_get_paternal_grandmother):
+        # check if get_paternal_grandmother has been replaced by a mock
+        self.assertEqual(isinstance(self.member.get_paternal_grandmother,Mock), True)
+
+        # check for None Grandmother
+        self.assertEqual(self.member.get_paternal_aunt(), [])
+
+        # check for a single member
+        self.assertEqual(self.member.get_paternal_aunt(), [])
+
+        # check for a single child
+        self.assertEqual(self.member.get_paternal_aunt(), [])
+
+        # check for only men children
+        self.assertEqual(self.member.get_paternal_aunt(), [])
+
+        # success cases
+        # One aunt
+        paternal_aunts = self.member.get_paternal_aunt()
+        self.assertEqual(len(paternal_aunts), 1)
+        self.assertEqual(paternal_aunts[0].name, "Aunt")
+        self.assertEqual(paternal_aunts[0].gender, Gender.female)
+
+        #Two aunts
+        paternal_aunts_2 = self.member.get_paternal_aunt()
+        self.assertEqual(len(paternal_aunts_2), 2)
+        self.assertTrue(all(map(lambda m: m.name in ["Aunt1", "Aunt2"], paternal_aunts_2)))
+        self.assertTrue(all(map(lambda m: m.gender == Gender.female, paternal_aunts_2)))
+
+    @patch('src.member.Member.get_paternal_grandmother', side_effect=[
+            None,
+            create_fake_member(),
+            create_fake_member(children=[return_father()]),
+            create_fake_member(children=[
+                return_father(),
+                Member(4, "Aunt1", Gender.female),
+                Member(5, "Aunt2", Gender.female)
+            ]),
+            create_fake_member(children=[
+                return_father(),
+                Member(11, "Uncle", Gender.male),
+                Member(12, "Aunt", Gender.female)
+            ]),
+            create_fake_member(children=[
+                return_father(),
+                Member(11, "Uncle1", Gender.male),
+                Member(12, "Uncle2", Gender.male),
+                Member(13, "Aunt1", Gender.female),
+                Member(14, "Aunt2", Gender.female),
+            ])
+    ])
+    def test_get_paternal_uncle(self, mock_get_paternal_grandmother):
+        self.member.father = return_father()
+        # check if get_paternal_grandmother has been replaced by a mock
+        self.assertEqual(isinstance(self.member.get_paternal_grandmother,Mock), True)
+
+        # check for None Grandmother
+        self.assertEqual(self.member.get_paternal_uncle(), [])
+
+        # check for a single member
+        self.assertEqual(self.member.get_paternal_uncle(), [])
+
+        # check for a single child
+        self.assertEqual(self.member.get_paternal_uncle(), [])
+
+        # check for only sisters
+        self.assertEqual(self.member.get_paternal_uncle(), [])
+
+        # success cases
+        # One uncle
+        paternal_uncles = self.member.get_paternal_uncle()
+        self.assertEqual(len(paternal_uncles), 1)
+        self.assertEqual(paternal_uncles[0].name, "Uncle")
+        self.assertEqual(paternal_uncles[0].gender, Gender.male)
+
+        #Two uncles
+        paternal_uncles_2 = self.member.get_paternal_uncle()
+        self.assertEqual(len(paternal_uncles_2), 2)
+        self.assertTrue(all(map(lambda m: m.name in ["Uncle1", "Uncle2"], paternal_uncles_2)))
+        self.assertTrue(all(map(lambda m: m.gender == Gender.male, paternal_uncles_2)))
